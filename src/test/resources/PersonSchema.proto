@@ -1,9 +1,11 @@
+syntax = "proto3";
 option java_package = "com.github.os72.protobuf.dynamic";
-option java_outer_classname = "PersonSchema";
+option java_outer_classname = "PersonSchema2";
 
 message Person {
-  required int32 id = 1;
-  required string name = 2;
+  option map_entry = true;
+  int32 id = 1;
+  string name = 2;
   optional string email = 3;
   oneof address {
     string home_addr = 4;
@@ -17,9 +19,31 @@ message Person {
   }
 
   message PhoneNumber {
-    required string number = 1;
-    optional PhoneType type = 2 [default = HOME];
+    string number = 1;
+    optional PhoneType type = 2;
+  }
+
+  message Address {
+    string street = 1;
+    int32 num = 2;
+  }
+
+  message Map {
+    map<string, string> data = 1;
   }
 
   repeated PhoneNumber phone = 6;
+
+  map<string, string> strMap = 7;
+
+  map<int64, PhoneNumber> phoneMap = 8;
+
+  map<string, int64> abc = 9;
+
+  optional Address add = 10;
+
+}
+
+service Message {
+  rpc getMessage (Address) returns (list<Person>){}
 }

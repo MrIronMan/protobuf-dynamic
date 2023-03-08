@@ -16,9 +16,11 @@
 
 package com.github.os72.protobuf.dynamic;
 
+import com.google.protobuf.DescriptorProtos.MessageOptions;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.protobuf.DescriptorProtos;
 import com.google.protobuf.DescriptorProtos.DescriptorProto;
 import com.google.protobuf.DescriptorProtos.FieldDescriptorProto;
 import com.google.protobuf.DescriptorProtos.OneofDescriptorProto;
@@ -71,6 +73,11 @@ public class MessageDefinition
 			return this;
 		}
 
+		public Builder addField(FieldDescriptorProto fieldDescriptorProto) {
+			mMsgTypeBuilder.addField(fieldDescriptorProto);
+			return this;
+		}
+
 		public OneofBuilder addOneof(String oneofName) {
 			mMsgTypeBuilder.addOneofDecl(OneofDescriptorProto.newBuilder().setName(oneofName).build());
 			return new OneofBuilder(this, mOneofIndex++);
@@ -87,6 +94,17 @@ public class MessageDefinition
 		}
 
 		public MessageDefinition build() {
+			mMsgTypeBuilder.setOptions(MessageOptions.newBuilder().setMapEntry(false).build());
+			return new MessageDefinition(mMsgTypeBuilder.build());
+		}
+
+		/**
+		 * 构建能够使用 map 的 definition
+		 *
+		 * @return
+		 */
+		public MessageDefinition buildWithMap() {
+			mMsgTypeBuilder.setOptions(MessageOptions.newBuilder().setMapEntry(true).build());
 			return new MessageDefinition(mMsgTypeBuilder.build());
 		}
 
@@ -98,10 +116,21 @@ public class MessageDefinition
 		}
 
 		private void addField(FieldDescriptorProto.Label label, String type, String name, int num, String defaultVal, OneofBuilder oneofBuilder) {
+			DescriptorProto build = DescriptorProto.newBuilder().build();
 			FieldDescriptorProto.Builder fieldBuilder = FieldDescriptorProto.newBuilder();
 			fieldBuilder.setLabel(label);
 			FieldDescriptorProto.Type primType = sTypeMap.get(type);
-			if (primType != null) fieldBuilder.setType(primType); else fieldBuilder.setTypeName(type);
+			if (primType != null) {
+				fieldBuilder.setType(primType);
+			} else {
+				fieldBuilder.setTypeName(type);
+			}
+			if (primType == FieldDescriptorProto.Type.TYPE_MESSAGE && name.equals("strMap")) {
+				fieldBuilder.setTypeName(".Person.StrMapEntry");
+			}
+			if (primType == FieldDescriptorProto.Type.TYPE_MESSAGE && name.equals("phoneMap")) {
+				fieldBuilder.setTypeName(".Person.PhoneMapEntry");
+			}
 			fieldBuilder.setName(name).setNumber(num);
 			if (defaultVal != null) fieldBuilder.setDefaultValue(defaultVal);
 			if (oneofBuilder != null) fieldBuilder.setOneofIndex(oneofBuilder.getIdx());
@@ -167,9 +196,9 @@ public class MessageDefinition
 		sTypeMap.put("bool", FieldDescriptorProto.Type.TYPE_BOOL);
 		sTypeMap.put("string", FieldDescriptorProto.Type.TYPE_STRING);
 		sTypeMap.put("bytes", FieldDescriptorProto.Type.TYPE_BYTES);
-		//sTypeMap.put("enum", FieldDescriptorProto.Type.TYPE_ENUM);
-		//sTypeMap.put("message", FieldDescriptorProto.Type.TYPE_MESSAGE);
-		//sTypeMap.put("group", FieldDescriptorProto.Type.TYPE_GROUP);
+		sTypeMap.put("enum", FieldDescriptorProto.Type.TYPE_ENUM);
+		sTypeMap.put("message", FieldDescriptorProto.Type.TYPE_MESSAGE);
+		sTypeMap.put("group", FieldDescriptorProto.Type.TYPE_GROUP);
 		
 		sLabelMap = new HashMap<String,FieldDescriptorProto.Label>();
 		sLabelMap.put("optional", FieldDescriptorProto.Label.LABEL_OPTIONAL);

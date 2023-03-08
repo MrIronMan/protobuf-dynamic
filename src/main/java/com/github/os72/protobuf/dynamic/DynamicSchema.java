@@ -238,7 +238,7 @@ public class DynamicSchema
 				
 				if (resolvedFdList.size() == dependencyList.size()) { // dependencies resolved
 					FileDescriptor[] fds = new FileDescriptor[resolvedFdList.size()];
-					FileDescriptor fd = FileDescriptor.buildFrom(fdProto, resolvedFdList.toArray(fds));
+					FileDescriptor fd = FileDescriptor.buildFrom(fdProto, resolvedFdList.toArray(fds), true);
 					resolvedFileDescMap.put(fdProto.getName(), fd);
 				}
 			}
