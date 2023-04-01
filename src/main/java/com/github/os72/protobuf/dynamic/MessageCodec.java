@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.github.os72.protobuf.dynamic.MessageDefinition.Builder;
+import com.google.protobuf.Any;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -14,12 +15,12 @@ import com.google.protobuf.Struct;
 import com.google.protobuf.util.JsonFormat;
 import com.google.protobuf.util.JsonFormat.Parser;
 import com.google.protobuf.util.JsonFormat.Printer;
-import com.google.protobuf.util.Structs;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -45,12 +46,14 @@ public class MessageCodec {
     /**
      * 默认前缀
      */
-    private static final String DEFAULT_PREFIX = "com.github";
+    private static final String[] DEFAULT_PREFIX_LIST = new String[]{"com.github", "cn.jojo"};
+
+    /**
+     * 内置字段
+     */
+    private static final String DATA_KEY = "dynamicDataList";
 
     private static Map<String, String> TYPE_MAPPING = new HashMap<>(32);
-
-    // FIXME: 2022/12/26 需要把该对象放在流程中去
-    private static Map<String, MessageDefinition> CUSTOM_TYPE_MAPPING = new ConcurrentHashMap<>(256);
 
     /**
      * 处理缓存
@@ -121,13 +124,14 @@ public class MessageCodec {
     @SuppressWarnings("unchecked")
     public static DynamicMessage buildMessage(HandleWrapper wrapper, Object value) {
         if (value instanceof List) {
-            Map<String, List> map = new HashMap<>();
-            map.put("dataList", (List) value);
+            Map<String, List> map = new HashMap<>(32);
+            map.put(DATA_KEY, (List) value);
             value = map;
         }
         DynamicSchema schema = wrapper.getSchema();
         DynamicMessage.Builder msgBuilder = schema.newMessageBuilder(wrapper.getTopTypeName());
         try {
+            // FIXME: 2023/3/22 此处如果关闭引用会有问题
             JsonFormat.parser().merge(JSON.toJSONString(value, SerializerFeature.DisableCircularReferenceDetect), msgBuilder);
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
@@ -142,7 +146,7 @@ public class MessageCodec {
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
         }
-        if (StringUtils.contains(data, "dataList")) {
+        if (StringUtils.contains(data, DATA_KEY)) {
             String realData = data.substring(StringUtils.indexOf(data, "[{"), data.length() - 1);
             return JSONObject.parseObject(realData, valueType);
         }
@@ -211,7 +215,7 @@ public class MessageCodec {
             if (protocolBufferType != null) {
                 // 普通类型
                 msgBuilder.addField("optional", protocolBufferType, field.getName(), fieldIndex);
-            } else if (fieldTypeName.startsWith(DEFAULT_PREFIX) && !field.getType().isEnum()) {
+            } else if (StringUtils.startsWithAny(fieldTypeName, DEFAULT_PREFIX_LIST) && !field.getType().isEnum()) {
                 // 嵌套类型
                 generateSchema(fieldTypeName, schemaBuilder, context);
                 msgBuilder.addField("optional", parseFieldName(fieldTypeName), field.getName(), fieldIndex);
@@ -219,6 +223,9 @@ public class MessageCodec {
                 // Collection 容器类型
                 // FIXME: 2022/12/9 List<Map<String, String>> 无法支持这种结构
                 ParameterizedType parameterizedType = getParameterizedType(targetClass, field);
+                if (parameterizedType.getActualTypeArguments()[0].getTypeName().contains("java.util.Map")) {
+                    throw new UnsupportedOperationException("type: " + parameterizedType.getActualTypeArguments()[0].getTypeName());
+                }
                 String typeName = parameterizedType.getActualTypeArguments()[0].getTypeName();
                 protocolBufferType = TYPE_MAPPING.get(typeName);
                 if (protocolBufferType != null) {
@@ -232,7 +239,10 @@ public class MessageCodec {
             } else if (field.getType().isEnum()) {
                 msgBuilder.addField("optional", "string", field.getName(), fieldIndex);
             } else {
-                throw new UnsupportedOperationException("type:" + fieldTypeName);
+                if (field.getName().equals("__$lineHits$__")) {
+                    continue;
+                }
+                throw new UnsupportedOperationException("class: " + valueTypeName + ", fieldName: " + field.getName() + ", type:" + fieldTypeName);
             }
         }
         if (!context.getAddedList().contains(valueTypeName)) {
@@ -262,7 +272,7 @@ public class MessageCodec {
             typeName = parameterizedType.getActualTypeArguments()[0].getTypeName();
             prefix = "List";
             MessageDefinition wrapperDef = MessageDefinition.newBuilder(parseFieldName(prefix + typeName))
-                .addField("repeated", parseFieldName(typeName), "dataList", 1)
+                .addField("repeated", parseFieldName(typeName), DATA_KEY, 1)
                 .build();
             schemaBuilder.addMessageDefinition(wrapperDef);
         } else {
@@ -292,142 +302,6 @@ public class MessageCodec {
         return handleWrapper;
     }
 
-
-
-
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    public static HandleWrapper buildSchema(Type valueType)
-        throws ClassNotFoundException, IllegalAccessException, DescriptorValidationException {
-        HandleWrapper cacheWrapper = CACHE.get(valueType);
-        if (cacheWrapper != null) {
-            return cacheWrapper;
-        }
-        String typeName = null;
-        String prefix = null;
-
-        // Create dynamic schema
-        DynamicSchema.Builder schemaBuilder = DynamicSchema.newBuilder();
-        if (!(valueType instanceof ParameterizedTypeImpl)) {
-            typeName = valueType.getTypeName();
-            prefix = "";
-            // 一般类
-        } else if (List.class.isAssignableFrom(((ParameterizedTypeImpl) valueType).getRawType())) {
-            ParameterizedTypeImpl parameterizedType = (ParameterizedTypeImpl) valueType;
-            typeName = parameterizedType.getActualTypeArguments()[0].getTypeName();
-            prefix = "List";
-            MessageDefinition wrapperDef = MessageDefinition.newBuilder(parseFieldName(prefix + typeName))
-                .addField("repeated", parseFieldName(typeName), "dataList", 1)
-                .build();
-            schemaBuilder.addMessageDefinition(wrapperDef);
-        } else {
-            throw new UnsupportedOperationException("type:" + valueType.getTypeName());
-        }
-        String fileDefinitionName = parseFieldName(typeName);
-        String name = prefix + fileDefinitionName;
-        schemaBuilder.setName(typeName + ".proto");
-
-        Builder msgBuilder = MessageDefinition.newBuilder(fileDefinitionName);
-        Class<?> targetClass = Class.forName(typeName);
-        Field[] fields = targetClass.getDeclaredFields();
-
-        loadMapDef(schemaBuilder);
-
-        for (int i = 0; i < fields.length; i++) {
-            int fieldIndex = i + 1;
-            Field field = fields[i];
-            String fieldTypeName = field.getType().getName();
-            String protocolBufferType = TYPE_MAPPING.get(fieldTypeName);
-            if (protocolBufferType != null) {
-                msgBuilder.addField("optional", protocolBufferType, field.getName(), fieldIndex);
-            } else if (fieldTypeName.startsWith(DEFAULT_PREFIX) && !field.getType().isEnum()) {
-                MessageDefinition definition = CUSTOM_TYPE_MAPPING.get(fieldTypeName);
-                if (definition != null) {
-                    schemaBuilder.addMessageDefinition(definition);
-                    msgBuilder.addField("optional", parseFieldName(fieldTypeName), field.getName(), fieldIndex);
-                    continue;
-                }
-                generate(fieldTypeName, schemaBuilder);
-                msgBuilder.addField("optional", parseFieldName(fieldTypeName), field.getName(), fieldIndex);
-            } else if (Collection.class.isAssignableFrom(field.getType())) {
-                // Collection 容器类型
-                // FIXME: 2022/12/9 List<Map<String, String>> 无法支持这种结构
-                ParameterizedType fieldParameterizedType = getParameterizedType(targetClass, field);
-                String realTypeName = fieldParameterizedType.getActualTypeArguments()[0].getTypeName();
-                protocolBufferType = TYPE_MAPPING.get(realTypeName);
-                if (protocolBufferType != null) {
-                    msgBuilder.addField("repeated", protocolBufferType, field.getName(), fieldIndex);
-                } else {
-                    msgBuilder.addField("repeated", parseFieldName(realTypeName), field.getName(), fieldIndex);
-                    generate(realTypeName, schemaBuilder);
-                }
-            } else if (Map.class.isAssignableFrom(field.getType())) {
-                msgBuilder.addField("repeated", "Map", field.getName(), fieldIndex);
-            } else if (field.getType().isEnum()) {
-                msgBuilder.addField("optional", "string", field.getName(), fieldIndex);
-            } else {
-                throw new UnsupportedOperationException("type:" + fieldTypeName);
-            }
-        }
-        schemaBuilder.addMessageDefinition(msgBuilder.build());
-        DynamicSchema dynamicSchema = schemaBuilder.build();
-        // 一般类结构
-        // List
-//            ((ParameterizedTypeImpl) m.getGenericReturnType()).getActualTypeArguments()[0]
-        // Map
-        HandleWrapper handleWrapper = new HandleWrapper();
-        handleWrapper.setSchema(dynamicSchema);
-        handleWrapper.setName(name);
-        handleWrapper.setTopTypeName(name);
-        CACHE.putIfAbsent(valueType, handleWrapper);
-        return handleWrapper;
-    }
-
-    public static void generate(String valueTypeName, DynamicSchema.Builder schemaBuilder)
-        throws ClassNotFoundException, IllegalAccessException {
-        MessageDefinition messageDefinition = CUSTOM_TYPE_MAPPING.get(valueTypeName);
-        if (messageDefinition != null) {
-            return;
-        }
-        Class<?> targetClass = Class.forName(valueTypeName);
-        Builder msgBuilder = MessageDefinition.newBuilder(parseFieldName(valueTypeName));
-        Field[] fields = targetClass.getDeclaredFields();
-        for (int i = 0; i < fields.length; i++) {
-            Field field = fields[i];
-            String fieldTypeName = field.getType().getName();
-            String protocolBufferType = TYPE_MAPPING.get(fieldTypeName);
-            if (protocolBufferType != null) {
-                // 普通类型
-                msgBuilder.addField("optional", protocolBufferType, field.getName(), i + 1);
-            } else if (fieldTypeName.startsWith(DEFAULT_PREFIX) && !field.getType().isEnum()) {
-                // 嵌套类型
-                generate(fieldTypeName, schemaBuilder);
-            } else if (Collection.class.isAssignableFrom(field.getType())) {
-                // Collection 容器类型
-                // FIXME: 2022/12/9 List<Map<String, String>> 无法支持这种结构
-                ParameterizedType parameterizedType = getParameterizedType(targetClass, field);
-                String typeName = parameterizedType.getActualTypeArguments()[0].getTypeName();
-                protocolBufferType = TYPE_MAPPING.get(typeName);
-                if (protocolBufferType != null) {
-                    msgBuilder.addField("repeated", protocolBufferType, field.getName(), i + 1);
-                } else {
-                    msgBuilder.addField("repeated", parseFieldName(typeName), field.getName(), i + 1);
-                    generate(typeName, schemaBuilder);
-                }
-            } else if (Map.class.isAssignableFrom(field.getType())) {
-                msgBuilder.addField("repeated", "Map", field.getName(), i);
-            } else if (field.getType().isEnum()) {
-                msgBuilder.addField("optional", "string", field.getName(), i + 1);
-            } else {
-                throw new UnsupportedOperationException("type:" + fieldTypeName);
-            }
-        }
-        CUSTOM_TYPE_MAPPING.putIfAbsent(valueTypeName, msgBuilder.build());
-        schemaBuilder.addMessageDefinition(msgBuilder.build());
-    }
-
     public static ParameterizedType getParameterizedType(Class<?> targetClass, Field field) {
         String getMethodName = "get" + field.getName().substring(0, 1).toUpperCase() + field.getName().substring(1);
         Method[] methods = targetClass.getMethods();
@@ -438,7 +312,23 @@ public class MessageCodec {
             throw new IllegalArgumentException(targetClass.getName() + " 未找到对于的 get 方法：" + getMethodName + "，无法获取对应的类型");
         }
         Method method = methodList.get(0);
-        ParameterizedTypeImpl parameterizedType = (ParameterizedTypeImpl) method.getGenericReturnType();
-        return parameterizedType;
+        return (ParameterizedTypeImpl) method.getGenericReturnType();
+    }
+
+    public class Case {
+        private List<Map<String, String>> data = new ArrayList<>();
+
+        public List<Map<String, String>> getData() {
+            return data;
+        }
+
+        public void setData(List<Map<String, String>> data) {
+            this.data = data;
+        }
+    }
+
+    public static void main(String[] args) {
+        Field field = Case.class.getDeclaredFields()[0];
+        getParameterizedType(Case.class, field);
     }
 }

@@ -18,12 +18,14 @@ import com.google.protobuf.Any;
 import com.google.protobuf.DescriptorProtos.DescriptorProto;
 import com.google.protobuf.DescriptorProtos.MessageOptions;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
+import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.ListValue;
 import com.google.protobuf.ListValue.Builder;
 import com.google.protobuf.Message;
 import com.google.protobuf.Struct;
+import com.google.protobuf.util.JsonFormat;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -34,6 +36,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -60,7 +63,7 @@ public class MessageCodecTest {
      */
     @Test
     public void testJson() throws IOException {
-        String data = "{\"dataList\":[{\"addressList\":[\"dddd\"],\"babyList\":[{\"bol\":false,\"c\":\"c\",\"c1\":\"c\",\"d\":4.0,\"d1\":8.0,\"f\":3.0,\"f1\":7.0,\"id\":1,\"id1\":2,\"l\":5,\"l1\":9,\"type\":\"NORMAL\"},{\"bol\":false,\"c\":\"c\",\"c1\":\"c\",\"d\":4.0,\"d1\":8.0,\"f\":3.0,\"f1\":7.0,\"id\":1,\"id1\":2,\"l\":5,\"l1\":9,\"type\":\"NORMAL\"}],\"id\":100000,\"idsList\":[1234],\"map\":{\"key123\":\"value123\"},\"name\":\"Mark-1\",\"user\":{\"bol\":false,\"c\":\"c\",\"c1\":\"c\",\"d\":4.0,\"d1\":8.0,\"f\":3.0,\"f1\":7.0,\"id\":1,\"id1\":2,\"l\":5,\"l1\":9,\"type\":\"NORMAL\"}},{\"addressList\":[\"dddd\"],\"babyList\":[{\"bol\":false,\"c\":\"c\",\"c1\":\"c\",\"d\":4.0,\"d1\":8.0,\"f\":3.0,\"f1\":7.0,\"id\":1,\"id1\":2,\"l\":5,\"l1\":9,\"type\":\"NORMAL\"},{\"bol\":false,\"c\":\"c\",\"c1\":\"c\",\"d\":4.0,\"d1\":8.0,\"f\":3.0,\"f1\":7.0,\"id\":1,\"id1\":2,\"l\":5,\"l1\":9,\"type\":\"NORMAL\"}],\"id\":100000,\"idsList\":[1234],\"map\":{\"key123\":\"value123\"},\"name\":\"Mark-1\",\"user\":{\"bol\":false,\"c\":\"c\",\"c1\":\"c\",\"d\":4.0,\"d1\":8.0,\"f\":3.0,\"f1\":7.0,\"id\":1,\"id1\":2,\"l\":5,\"l1\":9,\"type\":\"NORMAL\"}}]}";
+        String data = "{\"dynamicDataList\":[{\"addressList\":[\"dddd\"],\"babyList\":[{\"bol\":false,\"c\":\"c\",\"c1\":\"c\",\"d\":4.0,\"d1\":8.0,\"f\":3.0,\"f1\":7.0,\"id\":1,\"id1\":2,\"l\":5,\"l1\":9,\"type\":\"NORMAL\"},{\"bol\":false,\"c\":\"c\",\"c1\":\"c\",\"d\":4.0,\"d1\":8.0,\"f\":3.0,\"f1\":7.0,\"id\":1,\"id1\":2,\"l\":5,\"l1\":9,\"type\":\"NORMAL\"}],\"id\":100000,\"idsList\":[1234],\"map\":{\"key123\":\"value123\"},\"name\":\"Mark-1\",\"user\":{\"bol\":false,\"c\":\"c\",\"c1\":\"c\",\"d\":4.0,\"d1\":8.0,\"f\":3.0,\"f1\":7.0,\"id\":1,\"id1\":2,\"l\":5,\"l1\":9,\"type\":\"NORMAL\"}},{\"addressList\":[\"dddd\"],\"babyList\":[{\"bol\":false,\"c\":\"c\",\"c1\":\"c\",\"d\":4.0,\"d1\":8.0,\"f\":3.0,\"f1\":7.0,\"id\":1,\"id1\":2,\"l\":5,\"l1\":9,\"type\":\"NORMAL\"},{\"bol\":false,\"c\":\"c\",\"c1\":\"c\",\"d\":4.0,\"d1\":8.0,\"f\":3.0,\"f1\":7.0,\"id\":1,\"id1\":2,\"l\":5,\"l1\":9,\"type\":\"NORMAL\"}],\"id\":100000,\"idsList\":[1234],\"map\":{\"key123\":\"value123\"},\"name\":\"Mark-1\",\"user\":{\"bol\":false,\"c\":\"c\",\"c1\":\"c\",\"d\":4.0,\"d1\":8.0,\"f\":3.0,\"f1\":7.0,\"id\":1,\"id1\":2,\"l\":5,\"l1\":9,\"type\":\"NORMAL\"}}]}";
         Message message = MessageCodec.fromJson(data);
         System.out.println(JSON.toJSONString(message.toByteArray()));
         Struct struct = Struct.newBuilder().mergeFrom(message.toByteArray()).build();
@@ -173,7 +176,7 @@ public class MessageCodecTest {
         HandleWrapper handleWrapper = MessageCodec.buildSchemaV2(genericReturnType);
 
         Map<String, List<NestedUser>> jsonObject = new HashMap<>();
-        jsonObject.put("dataList", nestedUserList);
+        jsonObject.put("dynamicDataList", nestedUserList);
         Wrapper<List<NestedUser>> wrapper = new Wrapper<>();
         wrapper.setValue(nestedUserList);
 
@@ -293,5 +296,4 @@ public class MessageCodecTest {
         System.out.println("generate size: " + byteArrayOutputStream1.toByteArray().length);
         System.out.println("message size: " + byteArrayOutputStream2.toByteArray().length);
     }
-
 }
