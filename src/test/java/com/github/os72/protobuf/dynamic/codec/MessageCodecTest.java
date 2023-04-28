@@ -1,42 +1,36 @@
 package com.github.os72.protobuf.dynamic.codec;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.github.os72.protobuf.dynamic.MessageCodec;
 import com.github.os72.protobuf.dynamic.MessageCodec.HandleWrapper;
-import com.github.os72.protobuf.dynamic.Person.Address;
-import com.github.os72.protobuf.dynamic.PersonSchema2;
 import com.github.os72.protobuf.dynamic.PersonSchema2.Person;
 import com.github.os72.protobuf.dynamic.Wrapper;
 import com.github.os72.protobuf.dynamic.codec.model.CircularUser;
+import com.github.os72.protobuf.dynamic.codec.model.EmptyUser;
 import com.github.os72.protobuf.dynamic.codec.model.ListType;
+import com.github.os72.protobuf.dynamic.codec.model.ModifyFieldIndexUser;
 import com.github.os72.protobuf.dynamic.codec.model.NestedUser;
+import com.github.os72.protobuf.dynamic.codec.model.SetType;
 import com.github.os72.protobuf.dynamic.codec.model.ThirdLevel;
 import com.github.os72.protobuf.dynamic.codec.model.User;
-import com.google.protobuf.Any;
-import com.google.protobuf.DescriptorProtos.DescriptorProto;
-import com.google.protobuf.DescriptorProtos.MessageOptions;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
-import com.google.protobuf.Descriptors.FileDescriptor;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.ListValue;
-import com.google.protobuf.ListValue.Builder;
 import com.google.protobuf.Message;
 import com.google.protobuf.Struct;
-import com.google.protobuf.util.JsonFormat;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -214,8 +208,6 @@ public class MessageCodecTest {
         Assert.assertEquals(JSON.toJSONString(o), JSON.toJSONString(userList, SerializerFeature.DisableCircularReferenceDetect));
     }
 
-    // FIXME: 2023/3/7 set<User>
-
     // 大概处理 1w 次需要 2500 ms，一次 0.25ms
     @Test
     public void testTime() throws DescriptorValidationException, ClassNotFoundException, IllegalAccessException {
@@ -295,5 +287,82 @@ public class MessageCodecTest {
         System.out.println("native size: " + byteArrayOutputStream.toByteArray().length);
         System.out.println("generate size: " + byteArrayOutputStream1.toByteArray().length);
         System.out.println("message size: " + byteArrayOutputStream2.toByteArray().length);
+    }
+
+    // FIXME: 2023/4/27 调整字段的顺序的影响
+
+    @Test
+    public void testModifyFieldIndex()
+        throws DescriptorValidationException, ClassNotFoundException, IllegalAccessException, InvalidProtocolBufferException {
+        HandleWrapper userHandleWrapper = MessageCodec.buildSchemaV2(User.class);
+        HandleWrapper modifyFieldIndexUserHandleWrapper = MessageCodec.buildSchemaV2(ModifyFieldIndexUser.class);
+
+        User user = buildUser();
+
+        DynamicMessage dynamicMessage = MessageCodec.buildMessage(userHandleWrapper, user);
+
+        DynamicMessage message = DynamicMessage.parseFrom(
+            userHandleWrapper.getSchema().getMessageDescriptor(userHandleWrapper.getTopTypeName()),
+            dynamicMessage.toByteArray());
+
+        ModifyFieldIndexUser o = (ModifyFieldIndexUser) MessageCodec.parseObject(dynamicMessage, ModifyFieldIndexUser.class);
+        System.out.println(o);
+    }
+
+
+
+    @Test
+    public void testListWithEmpty()
+        throws DescriptorValidationException, ClassNotFoundException, IllegalAccessException, InvalidProtocolBufferException {
+        List<User> userList = Collections.emptyList();
+
+        Method[] methods = ListType.class.getMethods();
+        Method buildUserListMethod = Arrays.stream(methods).filter(method -> method.getName().equals("buildUserList"))
+            .collect(Collectors.toList()).get(0);
+        Type genericReturnType = buildUserListMethod.getGenericReturnType();
+        HandleWrapper handleWrapper = MessageCodec.buildSchemaV2(genericReturnType);
+
+        DynamicMessage dynamicMessage = MessageCodec.buildMessage(handleWrapper, userList);
+        DynamicMessage serializableData = DynamicMessage.parseFrom(
+            handleWrapper.getSchema().getMessageDescriptor(handleWrapper.getTopTypeName()),
+            dynamicMessage.toByteArray());
+
+        Object o = MessageCodec.parseObject(serializableData, genericReturnType);
+
+        Assert.assertEquals(JSON.toJSONString(o), JSON.toJSONString(userList, SerializerFeature.DisableCircularReferenceDetect));
+    }
+
+    @Test
+    public void testSimpleClassWithEmpty() throws DescriptorValidationException, ClassNotFoundException, IllegalAccessException {
+        HandleWrapper userHandleWrapper = MessageCodec.buildSchemaV2(EmptyUser.class);
+        System.out.println(userHandleWrapper.getSchema().toString());
+
+        EmptyUser emptyUser = new EmptyUser();
+
+        DynamicMessage dynamicMessage = MessageCodec.buildMessage(userHandleWrapper, emptyUser);
+
+        User o = (User) MessageCodec.parseObject(dynamicMessage, User.class);
+        System.out.println(o);
+    }
+
+    @Test
+    public void testSet()
+        throws DescriptorValidationException, ClassNotFoundException, IllegalAccessException, InvalidProtocolBufferException {
+        Set<User> userSet = SetType.buildUserSet();
+
+        Method[] methods = SetType.class.getMethods();
+        Method buildUserListMethod = Arrays.stream(methods).filter(method -> method.getName().equals("buildUserSet"))
+            .collect(Collectors.toList()).get(0);
+        Type genericReturnType = buildUserListMethod.getGenericReturnType();
+        HandleWrapper handleWrapper = MessageCodec.buildSchemaV2(genericReturnType);
+
+        DynamicMessage dynamicMessage = MessageCodec.buildMessage(handleWrapper, userSet);
+        DynamicMessage serializableData = DynamicMessage.parseFrom(
+            handleWrapper.getSchema().getMessageDescriptor(handleWrapper.getTopTypeName()),
+            dynamicMessage.toByteArray());
+
+        Object o = MessageCodec.parseObject(serializableData, genericReturnType);
+
+        Assert.assertEquals(JSON.toJSONString(o), JSON.toJSONString(userSet, SerializerFeature.DisableCircularReferenceDetect));
     }
 }

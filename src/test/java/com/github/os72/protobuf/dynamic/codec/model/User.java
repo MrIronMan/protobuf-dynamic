@@ -1,5 +1,7 @@
 package com.github.os72.protobuf.dynamic.codec.model;
 
+import java.util.Date;
+
 /**
  * @author ironman
  * @date 2022/12/21 20:54
@@ -39,7 +41,15 @@ public class User {
 
     private CircularUser circularUser;
 
+    private Date date = new Date();
 
+    public Date getDate() {
+        return date;
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
 
     public User() {
     }

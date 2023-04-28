@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.alibaba.fastjson.serializer.SerializerFeature;
 import com.github.os72.protobuf.dynamic.MessageDefinition.Builder;
-import com.google.protobuf.Any;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.DynamicMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
@@ -18,15 +17,18 @@ import com.google.protobuf.util.JsonFormat.Printer;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
@@ -128,6 +130,11 @@ public class MessageCodec {
             map.put(DATA_KEY, (List) value);
             value = map;
         }
+        if (value instanceof Set) {
+            Map<String, Set> map = new HashMap<>(32);
+            map.put(DATA_KEY, (Set) value);
+            value = map;
+        }
         DynamicSchema schema = wrapper.getSchema();
         DynamicMessage.Builder msgBuilder = schema.newMessageBuilder(wrapper.getTopTypeName());
         try {
@@ -146,6 +153,29 @@ public class MessageCodec {
         } catch (InvalidProtocolBufferException e) {
             throw new RuntimeException(e);
         }
+
+        // 兼容为 空对象，或者空列表的问题
+        if (dynamicMessage.toByteArray().length == 0) {
+            if (StringUtils.startsWithAny(valueType.getTypeName(), DEFAULT_PREFIX_LIST)) {
+                try {
+                    return Class.forName(valueType.getTypeName()).newInstance();
+                } catch (Exception e) {
+                    log.error("can't instance type:[{}]", valueType);
+                    throw new RuntimeException(e);
+                }
+            }
+            if (valueType instanceof ParameterizedTypeImpl) {
+                Class<?> rawType = ((ParameterizedTypeImpl) valueType).getRawType();
+                if (Collection.class.isAssignableFrom(rawType)) {
+                    return Collections.emptyList();
+                }
+                if (Map.class.isAssignableFrom(rawType)) {
+                    return new HashMap<>(8);
+                }
+            }
+            return null;
+        }
+
         if (StringUtils.contains(data, DATA_KEY)) {
             String realData = data.substring(StringUtils.indexOf(data, "[{"), data.length() - 1);
             return JSONObject.parseObject(realData, valueType);
@@ -196,7 +226,7 @@ public class MessageCodec {
 
     public static void generateSchema(String valueTypeName, DynamicSchema.Builder schemaBuilder, DynamicBuildContext context)
         throws ClassNotFoundException {
-        // 如果已经正在构建的列表中包含自己则线返回，避免递归
+        // 如果已经正在构建的列表中包含自己则先返回，避免递归
         if (context.getBuildingList().contains(valueTypeName)) {
             context.getNeedBuildList().add(valueTypeName);
             return;
@@ -207,9 +237,21 @@ public class MessageCodec {
         Class<?> targetClass = Class.forName(valueTypeName);
         Builder msgBuilder = MessageDefinition.newBuilder(parseFieldName(valueTypeName));
         Field[] fields = targetClass.getDeclaredFields();
-        for (int i = 0; i < fields.length; i++) {
+        List<Field> allField = new ArrayList<>(Arrays.asList(fields));
+        Class<?> parentClass = targetClass.getSuperclass();
+        while (parentClass != null && parentClass != Object.class) {
+            allField.addAll(Arrays.asList(parentClass.getDeclaredFields()));
+            parentClass = parentClass.getSuperclass();
+        }
+        for (int i = 0; i < allField.size(); i++) {
             int fieldIndex = i + 1;
-            Field field = fields[i];
+            Field field = allField.get(i);
+
+            fieldConflictCheck(field);
+            if (ignoreField(field)) {
+                continue;
+            }
+
             String fieldTypeName = field.getType().getName();
             String protocolBufferType = TYPE_MAPPING.get(fieldTypeName);
             if (protocolBufferType != null) {
@@ -238,6 +280,8 @@ public class MessageCodec {
                 msgBuilder.addField("repeated", "Map", field.getName(), fieldIndex);
             } else if (field.getType().isEnum()) {
                 msgBuilder.addField("optional", "string", field.getName(), fieldIndex);
+            } else if (Date.class.isAssignableFrom(field.getType())) {
+                msgBuilder.addField("optional", "int64", field.getName(), fieldIndex);
             } else {
                 if (field.getName().equals("__$lineHits$__")) {
                     continue;
@@ -250,6 +294,18 @@ public class MessageCodec {
         }
         context.getAddedList().add(valueTypeName);
         context.getBuildingList().remove(valueTypeName);
+    }
+
+    private static void fieldConflictCheck(Field field) {
+        if (field.getName().equals(DATA_KEY)) {
+            log.error("field name is a keyword:[{}]", DATA_KEY);
+            throw new UnsupportedOperationException("field name is conflict :(");
+        }
+    }
+
+    private static boolean ignoreField(Field field) {
+        int modifiers = field.getModifiers();
+        return Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers);
     }
 
     public static HandleWrapper buildSchemaV2(Type valueType)
@@ -271,6 +327,14 @@ public class MessageCodec {
             ParameterizedTypeImpl parameterizedType = (ParameterizedTypeImpl) valueType;
             typeName = parameterizedType.getActualTypeArguments()[0].getTypeName();
             prefix = "List";
+            MessageDefinition wrapperDef = MessageDefinition.newBuilder(parseFieldName(prefix + typeName))
+                .addField("repeated", parseFieldName(typeName), DATA_KEY, 1)
+                .build();
+            schemaBuilder.addMessageDefinition(wrapperDef);
+        } else if (Set.class.isAssignableFrom(((ParameterizedTypeImpl) valueType).getRawType())) {
+            ParameterizedTypeImpl parameterizedType = (ParameterizedTypeImpl) valueType;
+            typeName = parameterizedType.getActualTypeArguments()[0].getTypeName();
+            prefix = "Set";
             MessageDefinition wrapperDef = MessageDefinition.newBuilder(parseFieldName(prefix + typeName))
                 .addField("repeated", parseFieldName(typeName), DATA_KEY, 1)
                 .build();
@@ -302,7 +366,7 @@ public class MessageCodec {
         return handleWrapper;
     }
 
-    public static ParameterizedType getParameterizedType(Class<?> targetClass, Field field) {
+    private static ParameterizedType getParameterizedType(Class<?> targetClass, Field field) {
         String getMethodName = "get" + field.getName().substring(0, 1).toUpperCase() + field.getName().substring(1);
         Method[] methods = targetClass.getMethods();
         List<Method> methodList = Arrays.stream(methods)
