@@ -45,6 +45,10 @@ import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 @Slf4j
 public class MessageCodec {
 
+    private MessageCodec() {
+        throw new UnsupportedOperationException(":(");
+    }
+
     /**
      * 默认前缀
      */
@@ -57,12 +61,12 @@ public class MessageCodec {
 
     private static Map<String, String> TYPE_MAPPING = new HashMap<>(32);
 
+    private static final List<String> ILLEGAL_SYMBOL_LIST = Arrays.asList(".", "$");
+
     /**
      * 处理缓存
      */
     private static Map<Type, HandleWrapper> CACHE = new ConcurrentHashMap<>(512);
-
-    private static boolean cacheable = true;
 
     private static Map<String, String> CONTAINER_TYPE_MAPPING = new HashMap<>(16);
 
@@ -196,23 +200,42 @@ public class MessageCodec {
 
     private static Printer PRINTER = JsonFormat.printer();
 
+    /**
+     * 方法转换出来的结构体太大，不推荐使用
+     * @param json
+     * @return
+     * @throws IOException
+     */
+    @Deprecated
     public static Message fromJson(String json) throws IOException {
         Struct.Builder structBuilder = Struct.newBuilder();
         PARSE.merge(json, structBuilder);
         return structBuilder.build();
     }
 
+    /**
+     * 方法转换出来的结构体太大，不推荐使用
+     * @param messageOrBuilder
+     * @return
+     * @throws IOException
+     */
+    @Deprecated
     public static String toJson(MessageOrBuilder messageOrBuilder) throws IOException {
         return PRINTER.print(messageOrBuilder);
     }
 
+    /**
+     * 方法转换出来的结构体太大，不推荐使用
+     * @param json
+     * @return
+     * @throws InvalidProtocolBufferException
+     */
+    @Deprecated
     public static ListValue fromJsonList(String json) throws InvalidProtocolBufferException {
         ListValue.Builder builder = ListValue.newBuilder();
         PARSE.merge(json, builder);
         return builder.build();
     }
-
-    private static final List<String> ILLEGAL_SYMBOL_LIST = Arrays.asList(".", "$");
 
     private static String parseFieldName(String source) {
         if (source == null) {
@@ -263,7 +286,6 @@ public class MessageCodec {
                 msgBuilder.addField("optional", parseFieldName(fieldTypeName), field.getName(), fieldIndex);
             } else if (Collection.class.isAssignableFrom(field.getType())) {
                 // Collection 容器类型
-                // FIXME: 2022/12/9 List<Map<String, String>> 无法支持这种结构
                 ParameterizedType parameterizedType = getParameterizedType(targetClass, field);
                 if (parameterizedType.getActualTypeArguments()[0].getTypeName().contains("java.util.Map")) {
                     throw new UnsupportedOperationException("type: " + parameterizedType.getActualTypeArguments()[0].getTypeName());
@@ -277,6 +299,7 @@ public class MessageCodec {
                     generateSchema(typeName, schemaBuilder, context);
                 }
             } else if (Map.class.isAssignableFrom(field.getType())) {
+                // FIXME: 2022/12/9 List<Map<String, String>> 仅支持这种结构
                 msgBuilder.addField("repeated", "Map", field.getName(), fieldIndex);
             } else if (field.getType().isEnum()) {
                 msgBuilder.addField("optional", "string", field.getName(), fieldIndex);
@@ -377,22 +400,5 @@ public class MessageCodec {
         }
         Method method = methodList.get(0);
         return (ParameterizedTypeImpl) method.getGenericReturnType();
-    }
-
-    public class Case {
-        private List<Map<String, String>> data = new ArrayList<>();
-
-        public List<Map<String, String>> getData() {
-            return data;
-        }
-
-        public void setData(List<Map<String, String>> data) {
-            this.data = data;
-        }
-    }
-
-    public static void main(String[] args) {
-        Field field = Case.class.getDeclaredFields()[0];
-        getParameterizedType(Case.class, field);
     }
 }

@@ -1,0 +1,189 @@
+# JMH version: 1.36
+# VM version: JDK 1.8.0_322, OpenJDK 64-Bit Server VM, 25.322-b06
+# VM invoker: /Library/Java/JavaVirtualMachines/zulu-8.jdk/Contents/Home/jre/bin/java
+# VM options: -javaagent:/Applications/IntelliJ IDEA.app/Contents/lib/idea_rt.jar=50301:/Applications/IntelliJ IDEA.app/Contents/bin -Dfile.encoding=UTF-8
+# Blackhole mode: full + dont-inline hint (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 10 s each
+# Measurement: 5 iterations, 10 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: com.github.os72.protobuf.dynamic.codec.MessageCodecJMHTest.testCircularClass
+
+# Run progress: 0.00% complete, ETA 00:07:00
+# Fork: 1 of 1
+# Warmup Iteration   1: 42.065 ops/ms
+# Warmup Iteration   2: 25.088 ops/ms
+Iteration   1: 24.979 ops/ms
+Iteration   2: 38.867 ops/ms
+Iteration   3: 71.658 ops/ms
+Iteration   4: 87.609 ops/ms
+Iteration   5: 88.088 ops/ms
+
+
+Result "com.github.os72.protobuf.dynamic.codec.MessageCodecJMHTest.testCircularClass":
+  62.240 ±(99.9%) 111.188 ops/ms [Average]
+  (min, avg, max) = (24.979, 62.240, 88.088), stdev = 28.875
+  CI (99.9%): [≈ 0, 173.428] (assumes normal distribution)
+
+
+# JMH version: 1.36
+# VM version: JDK 1.8.0_322, OpenJDK 64-Bit Server VM, 25.322-b06
+# VM invoker: /Library/Java/JavaVirtualMachines/zulu-8.jdk/Contents/Home/jre/bin/java
+# VM options: -javaagent:/Applications/IntelliJ IDEA.app/Contents/lib/idea_rt.jar=50301:/Applications/IntelliJ IDEA.app/Contents/bin -Dfile.encoding=UTF-8
+# Blackhole mode: full + dont-inline hint (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 10 s each
+# Measurement: 5 iterations, 10 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: com.github.os72.protobuf.dynamic.codec.MessageCodecJMHTest.testList
+
+# Run progress: 16.67% complete, ETA 00:05:54
+# Fork: 1 of 1
+# Warmup Iteration   1: 37.908 ops/ms
+# Warmup Iteration   2: 40.871 ops/ms
+Iteration   1: 41.742 ops/ms
+Iteration   2: 41.670 ops/ms
+Iteration   3: 41.676 ops/ms
+Iteration   4: 39.717 ops/ms
+Iteration   5: 35.381 ops/ms
+
+
+Result "com.github.os72.protobuf.dynamic.codec.MessageCodecJMHTest.testList":
+  40.037 ±(99.9%) 10.553 ops/ms [Average]
+  (min, avg, max) = (35.381, 40.037, 41.742), stdev = 2.741
+  CI (99.9%): [29.484, 50.590] (assumes normal distribution)
+
+
+# JMH version: 1.36
+# VM version: JDK 1.8.0_322, OpenJDK 64-Bit Server VM, 25.322-b06
+# VM invoker: /Library/Java/JavaVirtualMachines/zulu-8.jdk/Contents/Home/jre/bin/java
+# VM options: -javaagent:/Applications/IntelliJ IDEA.app/Contents/lib/idea_rt.jar=50301:/Applications/IntelliJ IDEA.app/Contents/bin -Dfile.encoding=UTF-8
+# Blackhole mode: full + dont-inline hint (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 10 s each
+# Measurement: 5 iterations, 10 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: com.github.os72.protobuf.dynamic.codec.MessageCodecJMHTest.testNestedClass
+
+# Run progress: 33.33% complete, ETA 00:04:43
+# Fork: 1 of 1
+# Warmup Iteration   1: 12.573 ops/ms
+# Warmup Iteration   2: 11.788 ops/ms
+Iteration   1: 8.939 ops/ms
+Iteration   2: 11.500 ops/ms
+Iteration   3: 14.648 ops/ms
+Iteration   4: 19.998 ops/ms
+Iteration   5: 25.716 ops/ms
+
+
+Result "com.github.os72.protobuf.dynamic.codec.MessageCodecJMHTest.testNestedClass":
+  16.160 ±(99.9%) 25.987 ops/ms [Average]
+  (min, avg, max) = (8.939, 16.160, 25.716), stdev = 6.749
+  CI (99.9%): [≈ 0, 42.147] (assumes normal distribution)
+
+
+# JMH version: 1.36
+# VM version: JDK 1.8.0_322, OpenJDK 64-Bit Server VM, 25.322-b06
+# VM invoker: /Library/Java/JavaVirtualMachines/zulu-8.jdk/Contents/Home/jre/bin/java
+# VM options: -javaagent:/Applications/IntelliJ IDEA.app/Contents/lib/idea_rt.jar=50301:/Applications/IntelliJ IDEA.app/Contents/bin -Dfile.encoding=UTF-8
+# Blackhole mode: full + dont-inline hint (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 10 s each
+# Measurement: 5 iterations, 10 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: com.github.os72.protobuf.dynamic.codec.MessageCodecJMHTest.testNestedList
+
+# Run progress: 50.00% complete, ETA 00:03:32
+# Fork: 1 of 1
+# Warmup Iteration   1: 10.781 ops/ms
+# Warmup Iteration   2: 12.489 ops/ms
+Iteration   1: 12.520 ops/ms
+Iteration   2: 12.616 ops/ms
+Iteration   3: 12.703 ops/ms
+Iteration   4: 12.595 ops/ms
+Iteration   5: 12.588 ops/ms
+
+
+Result "com.github.os72.protobuf.dynamic.codec.MessageCodecJMHTest.testNestedList":
+  12.604 ±(99.9%) 0.254 ops/ms [Average]
+  (min, avg, max) = (12.520, 12.604, 12.703), stdev = 0.066
+  CI (99.9%): [12.351, 12.858] (assumes normal distribution)
+
+
+# JMH version: 1.36
+# VM version: JDK 1.8.0_322, OpenJDK 64-Bit Server VM, 25.322-b06
+# VM invoker: /Library/Java/JavaVirtualMachines/zulu-8.jdk/Contents/Home/jre/bin/java
+# VM options: -javaagent:/Applications/IntelliJ IDEA.app/Contents/lib/idea_rt.jar=50301:/Applications/IntelliJ IDEA.app/Contents/bin -Dfile.encoding=UTF-8
+# Blackhole mode: full + dont-inline hint (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 10 s each
+# Measurement: 5 iterations, 10 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: com.github.os72.protobuf.dynamic.codec.MessageCodecJMHTest.testSimpleClass
+
+# Run progress: 66.67% complete, ETA 00:02:21
+# Fork: 1 of 1
+# Warmup Iteration   1: 107.293 ops/ms
+# Warmup Iteration   2: 117.027 ops/ms
+Iteration   1: 118.683 ops/ms
+Iteration   2: 120.735 ops/ms
+Iteration   3: 121.323 ops/ms
+Iteration   4: 121.325 ops/ms
+Iteration   5: 119.311 ops/ms
+
+
+Result "com.github.os72.protobuf.dynamic.codec.MessageCodecJMHTest.testSimpleClass":
+  120.275 ±(99.9%) 4.666 ops/ms [Average]
+  (min, avg, max) = (118.683, 120.275, 121.325), stdev = 1.212
+  CI (99.9%): [115.609, 124.942] (assumes normal distribution)
+
+
+# JMH version: 1.36
+# VM version: JDK 1.8.0_322, OpenJDK 64-Bit Server VM, 25.322-b06
+# VM invoker: /Library/Java/JavaVirtualMachines/zulu-8.jdk/Contents/Home/jre/bin/java
+# VM options: -javaagent:/Applications/IntelliJ IDEA.app/Contents/lib/idea_rt.jar=50301:/Applications/IntelliJ IDEA.app/Contents/bin -Dfile.encoding=UTF-8
+# Blackhole mode: full + dont-inline hint (auto-detected, use -Djmh.blackhole.autoDetect=false to disable)
+# Warmup: 2 iterations, 10 s each
+# Measurement: 5 iterations, 10 s each
+# Timeout: 10 min per iteration
+# Threads: 1 thread, will synchronize iterations
+# Benchmark mode: Throughput, ops/time
+# Benchmark: com.github.os72.protobuf.dynamic.codec.MessageCodecJMHTest.testThirdLevel
+
+# Run progress: 83.33% complete, ETA 00:01:10
+# Fork: 1 of 1
+# Warmup Iteration   1: 361.076 ops/ms
+# Warmup Iteration   2: 523.447 ops/ms
+Iteration   1: 564.015 ops/ms
+Iteration   2: 566.154 ops/ms
+Iteration   3: 574.905 ops/ms
+Iteration   4: 549.330 ops/ms
+Iteration   5: 376.987 ops/ms
+
+
+Result "com.github.os72.protobuf.dynamic.codec.MessageCodecJMHTest.testThirdLevel":
+  526.278 ±(99.9%) 323.305 ops/ms [Average]
+  (min, avg, max) = (376.987, 526.278, 574.905), stdev = 83.961
+  CI (99.9%): [202.973, 849.583] (assumes normal distribution)
+
+
+# Run complete. Total time: 00:07:04
+
+REMEMBER: The numbers below are just data. To gain reusable insights, you need to follow up on
+why the numbers are the way they are. Use profilers (see -prof, -lprof), design factorial
+experiments, perform baseline and negative tests that provide experimental control, make sure
+the benchmarking environment is safe on JVM/OS/HW level, ask for reviews from the domain experts.
+Do not assume the numbers tell you what you want them to tell.
+
+Benchmark                               Mode  Cnt    Score     Error   Units
+MessageCodecJMHTest.testCircularClass  thrpt    5   62.240 ± 111.188  ops/ms
+MessageCodecJMHTest.testList           thrpt    5   40.037 ±  10.553  ops/ms
+MessageCodecJMHTest.testNestedClass    thrpt    5   16.160 ±  25.987  ops/ms
+MessageCodecJMHTest.testNestedList     thrpt    5   12.604 ±   0.254  ops/ms
+MessageCodecJMHTest.testSimpleClass    thrpt    5  120.275 ±   4.666  ops/ms
+MessageCodecJMHTest.testThirdLevel     thrpt    5  526.278 ± 323.305  ops/ms
