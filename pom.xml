@@ -5,7 +5,7 @@
   <groupId>com.github.os72</groupId>
   <artifactId>protobuf-dynamic</artifactId>
   <packaging>jar</packaging>
-  <version>1.0.2-SNAPSHOT</version>
+  <version>1.0.4-SNAPSHOT</version>
   <name>protobuf-dynamic</name>
   <url>https://github.com/os72/protobuf-dynamic</url>
   <description>Protocol Buffers Dynamic Schema</description>
@@ -148,6 +148,23 @@
 		  <version>${jmh.version}</version>
 		  <scope>test</scope>
 	  </dependency>
+
+	  <!--protostuff-->
+	  <dependency>
+		  <groupId>io.protostuff</groupId>
+		  <artifactId>protostuff-core</artifactId>
+		  <version>1.8.0</version>
+	  </dependency>
+	  <dependency>
+		  <groupId>io.protostuff</groupId>
+		  <artifactId>protostuff-runtime</artifactId>
+		  <version>1.8.0</version>
+	  </dependency>
+	  <dependency>
+		  <groupId>org.objenesis</groupId>
+		  <artifactId>objenesis</artifactId>
+		  <version>2.1</version>
+	  </dependency>
   </dependencies>
 
   <build>
@@ -229,5 +246,4 @@
 <!--		</plugin>-->
 	</plugins>
   </build>
-
 </project>

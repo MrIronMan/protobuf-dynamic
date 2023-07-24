@@ -25,7 +25,7 @@ public class NestedUser {
 
     Map<String, String> map = new HashMap<>();
 
-    List<User> babyList = Arrays.asList(new User(), new User());
+    List<User> babyList = new ArrayList<>();
 
     public static NestedUser build() {
         NestedUser nestedUser = new NestedUser();
@@ -36,6 +36,8 @@ public class NestedUser {
     }
 
     public NestedUser() {
+//        babyList.add(new User());
+//        babyList.add(new User());
     }
 
     public Integer getId() {
