@@ -14,6 +14,9 @@ import com.github.os72.protobuf.dynamic.codec.model.NestedUser;
 import com.github.os72.protobuf.dynamic.codec.model.SetType;
 import com.github.os72.protobuf.dynamic.codec.model.ThirdLevel;
 import com.github.os72.protobuf.dynamic.codec.model.User;
+import com.github.os72.protobuf.dynamic.codec.model.UserWithAddField;
+import com.github.os72.protobuf.dynamic.codec.model.UserWithDeleteField;
+import com.github.os72.protobuf.dynamic.codec.model.UserWithModifyFieldOrder;
 import com.google.gson.reflect.TypeToken;
 import com.google.protobuf.Descriptors.DescriptorValidationException;
 import com.google.protobuf.DynamicMessage;
@@ -237,10 +240,38 @@ public class PSTest {
         User user = buildUser();
         TypeToken<User> typeToken = new TypeToken<User>(){};
         byte[] bytes = ProtostuffUtils.serializer(user, typeToken.getType());
-        TypeToken<ModifyFieldIndexUser> modifyFieldIndexUserTypeToken = new TypeToken<ModifyFieldIndexUser>(){};
 
-        ModifyFieldIndexUser deserialize = ProtostuffUtils.deserialize(bytes, modifyFieldIndexUserTypeToken.getType());
-        System.out.println(deserialize);
+        try {
+            TypeToken<ModifyFieldIndexUser> modifyFieldIndexUserTypeToken = new TypeToken<ModifyFieldIndexUser>(){};
+            ModifyFieldIndexUser deserialize = ProtostuffUtils.deserialize(bytes, modifyFieldIndexUserTypeToken.getType());
+            System.out.println(deserialize);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+
+        try {
+            TypeToken<UserWithAddField> userWithAddFieldTypeToken = new TypeToken<UserWithAddField>(){};
+            UserWithAddField userWithAddField = ProtostuffUtils.deserialize(bytes, userWithAddFieldTypeToken.getType());
+            System.out.println(userWithAddField);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+
+        try {
+            TypeToken<UserWithDeleteField> userWithDeleteFieldTypeToken = new TypeToken<UserWithDeleteField>(){};
+            UserWithDeleteField userWithDeleteField = ProtostuffUtils.deserialize(bytes, userWithDeleteFieldTypeToken.getType());
+            System.out.println(userWithDeleteField);
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+
+        try {
+            TypeToken<UserWithModifyFieldOrder> userWithModifyFieldOrderTypeToken = new TypeToken<UserWithModifyFieldOrder>(){};
+            UserWithModifyFieldOrder userWithModifyFieldOrder = ProtostuffUtils.deserialize(bytes, userWithModifyFieldOrderTypeToken.getType());
+            System.out.println(userWithModifyFieldOrder);
+        } catch (Exception e) {
+                System.out.println(e);
+        }
     }
 
 

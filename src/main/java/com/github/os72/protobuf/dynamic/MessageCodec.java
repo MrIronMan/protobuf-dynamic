@@ -34,6 +34,8 @@ import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 /**
@@ -42,8 +44,10 @@ import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
  * @desc
  */
 
-@Slf4j
+//@Slf4j
 public class MessageCodec {
+
+    private static Logger log = LoggerFactory.getLogger(MessageCodec.class);
 
     private MessageCodec() {
         throw new UnsupportedOperationException(":(");
@@ -389,7 +393,7 @@ public class MessageCodec {
         return handleWrapper;
     }
 
-    private static ParameterizedType getParameterizedType(Class<?> targetClass, Field field) {
+    public static ParameterizedType getParameterizedType(Class<?> targetClass, Field field) {
         String getMethodName = "get" + field.getName().substring(0, 1).toUpperCase() + field.getName().substring(1);
         Method[] methods = targetClass.getMethods();
         List<Method> methodList = Arrays.stream(methods)
