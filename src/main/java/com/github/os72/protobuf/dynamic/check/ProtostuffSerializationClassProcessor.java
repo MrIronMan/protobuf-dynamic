@@ -146,9 +146,9 @@ public class ProtostuffSerializationClassProcessor extends AbstractProcessor {
             sb.append(line);
         }
         // 对比新的类文件和老的类文件，是否有字段类型，顺序的修改和删除
-        List<ProtostuffSerializationSchema> localSerializationSchemaList = JSON.parseArray(sb.toString(), ProtostuffSerializationSchema.class);
+        ProtostuffSerializationFile file = JSON.parseObject(sb.toString(), ProtostuffSerializationFile.class);
 
-        boolean illegal = compare(localSerializationSchemaList, newSchemaList, processingEnv);
+        boolean illegal = compare(file.getSchemas(), newSchemaList, processingEnv);
         if (!illegal) {
             processingEnv.getMessager().printMessage(Kind.ERROR, "类 " + className + " 的结构可能影响数据兼容性");
             return;
@@ -161,7 +161,11 @@ public class ProtostuffSerializationClassProcessor extends AbstractProcessor {
         throws IOException {
         System.out.println("正在生成对比文件:[" + className + "]······");
         // 将新配置添加到 resource 目录下
-        String newSchemaJson = JSON.toJSONString(newSchemaList);
+        ProtostuffSerializationFile protostuffSerializationFile = ProtostuffSerializationFile.builder()
+            .version(String.valueOf(System.currentTimeMillis()))
+            .schemas(newSchemaList)
+            .build();
+        String newSchemaJson = JSON.toJSONString(protostuffSerializationFile);
         String schemaPath = getFilePath(configPath, className);
         Path path = Paths.get(schemaPath);
         // 创建目录
