@@ -32,6 +32,7 @@ import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic.Kind;
+import org.apache.commons.collections4.CollectionUtils;
 
 /**
  * @author ironman
@@ -153,7 +154,18 @@ public class ProtostuffSerializationClassProcessor extends AbstractProcessor {
             processingEnv.getMessager().printMessage(Kind.ERROR, "类 " + className + " 的结构可能影响数据兼容性");
             return;
         }
-        writeFile(annotation.configPath(), className, newSchemaList);
+        // 对比变更
+        UpdateListVo<ProtostuffSerializationSchema> updateListVo = UpdateUtils.split(file.getSchemas(), newSchemaList,
+            (oldItem, newItem) -> oldItem.getFieldType().equals(newItem.getFieldType()) &&
+                    oldItem.getFieldName().equals(newItem.getFieldName()) &&
+                    oldItem.getFieldIndex().equals(newItem.getFieldIndex()));
+        if (CollectionUtils.isEmpty(updateListVo.getDeleteList()) &&
+            CollectionUtils.isEmpty(updateListVo.getInsertList())) {
+            System.out.println("暂无字段更新，不进行重写···");
+        } else {
+            System.out.println("字段有更新，即将覆盖原配置···");
+            writeFile(annotation.configPath(), className, newSchemaList);
+        }
         System.out.println("[" + className + "]类检查完成");
     }
 
