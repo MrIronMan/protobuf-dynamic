@@ -47,6 +47,9 @@ DynamicMessage msg = msgBuilder
 		.setField(msgDesc.findFieldByName("name"), "Alan Turing")
 		.setField(msgDesc.findFieldByName("email"), "at@sis.gov.uk")
 		.build();
+
+// Add this annotation on your target class
+@ProtostuffSerializationClass(configPath = "/jetcache-support/jetcache-redis-redisson/")
 ```
 
 #### Maven dependency
@@ -54,7 +57,7 @@ DynamicMessage msg = msgBuilder
 <dependency>
   <groupId>com.github.os72</groupId>
   <artifactId>protobuf-dynamic</artifactId>
-  <version>1.0.1</version>
+  <version>1.0.4</version>
 </dependency>
 ```
 ```xml
