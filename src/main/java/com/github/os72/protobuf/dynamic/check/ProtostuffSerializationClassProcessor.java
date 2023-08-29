@@ -114,13 +114,13 @@ public class ProtostuffSerializationClassProcessor extends AbstractProcessor {
             if (element.getKind() != ElementKind.FIELD) {
                 continue;
             }
-            String fieldTypeName = element.asType().toString();
-            String primitiveType = TYPE_MAPPING.get(fieldTypeName);
-            if (primitiveType == null) {
-                String getMethodName = "get" + element.getSimpleName().toString().substring(0, 1).toUpperCase() + element.getSimpleName().toString().substring(1);
-                ExecutableElement method = (ExecutableElement) nameMap.get(getMethodName);
-                primitiveType = method.getReturnType().toString();
-            }
+            String primitiveType = element.asType().toString();
+//            String primitiveType = TYPE_MAPPING.get(fieldTypeName);
+//            if (primitiveType == null) {
+//                String getMethodName = "get" + element.getSimpleName().toString().substring(0, 1).toUpperCase() + element.getSimpleName().toString().substring(1);
+//                ExecutableElement method = (ExecutableElement) nameMap.get(getMethodName);
+//                primitiveType = method.getReturnType().toString();
+//            }
 
             ProtostuffSerializationSchema schema = ProtostuffSerializationSchema.builder()
                 .fieldName(element.getSimpleName().toString())
@@ -132,7 +132,7 @@ public class ProtostuffSerializationClassProcessor extends AbstractProcessor {
         ProtostuffSerializationClass annotation =  annotatedElement.getAnnotation(ProtostuffSerializationClass.class);
         String schemaRelativePath = getFilePath(annotation.configPath(), className);
         Path schemaPath = Paths.get(schemaRelativePath);
-        if (!Files.exists(schemaPath)) {
+        if (!Files.exists(schemaPath) || annotation.firstGenerate()) {
             if (!annotation.firstGenerate()) {
                 processingEnv.getMessager().printMessage(Kind.ERROR, className + "配置文件不存在，请进行检查");
                 return;

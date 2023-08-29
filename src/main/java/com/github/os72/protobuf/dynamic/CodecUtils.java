@@ -28,21 +28,37 @@ public class CodecUtils {
      *             2. <code> new TypeToken<List<User>>(){}.getType() </code> 使用 com.google.common.reflect.TypeToken 的工具
      */
     @SneakyThrows
-    public static void decodeWithRedisString(String encodeStr, Type type) {
+    public static void customDecodeWithRedisString(String encodeStr, Type type) {
         String temp = encodeStr.replaceAll("\\\\x", "%");
         String realData = URLDecoder.decode(temp, "ISO-8859-1");
         byte[] realDataBytes = realData.getBytes(StandardCharsets.ISO_8859_1);
 
-        decodeWithBytes(realDataBytes, type);
+        customDecodeWithBytes(realDataBytes, type);
     }
 
     @SneakyThrows
-    public static void decodeWithBytes(byte[] bytes, Type type) {
+    public static void customDecodeWithBytes(byte[] bytes, Type type) {
         MessageCodec.HandleWrapper handleWrapper = MessageCodec.buildSchemaV2(type);
         Descriptor descriptor = handleWrapper.getSchema().getMessageDescriptor(handleWrapper.getTopTypeName());
         DynamicMessage dynamicMessage = DynamicMessage.parseFrom(descriptor, bytes);
         Object object = MessageCodec.parseObject(dynamicMessage, type);
         System.out.println(JSON.toJSONString(object));
+    }
+
+    /**
+     * 对直接使用 protostuff 的2进制的16进制字符串进行解码处理
+     *
+     * @param encodeStr
+     * @param type
+     */
+    @SneakyThrows
+    public static void decodeProto(String encodeStr, Type type) {
+        String temp = encodeStr.replaceAll("\\\\x", "%");
+        String realData = URLDecoder.decode(temp, "ISO-8859-1");
+        byte[] realDataBytes = realData.getBytes(StandardCharsets.ISO_8859_1);
+
+        Object deserialize = ProtostuffUtils.deserialize(realDataBytes, type);
+        System.out.println(JSON.toJSONString(deserialize));
     }
 
 }

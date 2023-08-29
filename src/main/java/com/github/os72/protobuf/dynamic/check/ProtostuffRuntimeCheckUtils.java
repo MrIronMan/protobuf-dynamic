@@ -44,10 +44,18 @@ public class ProtostuffRuntimeCheckUtils {
         TYPE_MAPPING.put("java.lang.String", "java.lang.String");
         TYPE_MAPPING.put("java.lang.Enum", "java.lang.Enum");
         TYPE_MAPPING.put("java.lang.Boolean", "java.lang.Boolean");
+
+        TYPE_MAPPING.put("java.util.Date", "java.util.Date");
     }
 
     /**
+     * 忽略的包名前缀，不用去检查是否添加注解
+     */
+    private static final String IGNORE_PACKAGE_NAME_PREFIX = "java.";
+
+    /**
      * 检查是否存在规定的注解
+     * 嵌套的类也需要添加相应的注解，包括泛型类
      *
      * @param valueType
      */
@@ -56,7 +64,7 @@ public class ProtostuffRuntimeCheckUtils {
             throw new IllegalArgumentException("valueType is null");
         }
 
-        if (TYPE_MAPPING.get(valueType.getTypeName()) != null) {
+        if (TYPE_MAPPING.get(valueType.getTypeName()) != null || valueType.getTypeName().startsWith(IGNORE_PACKAGE_NAME_PREFIX)) {
             return;
         }
         if (CACHE.get(valueType.getTypeName()) != null) {
@@ -91,7 +99,7 @@ public class ProtostuffRuntimeCheckUtils {
     }
 
     private static void parse(String type, Map<String, Class<?>> classMap) {
-        if (TYPE_MAPPING.get(type) != null) {
+        if (TYPE_MAPPING.get(type) != null  || type.startsWith(IGNORE_PACKAGE_NAME_PREFIX)) {
             return;
         }
         if (classMap == null) {
