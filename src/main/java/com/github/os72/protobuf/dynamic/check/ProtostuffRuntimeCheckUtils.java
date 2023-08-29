@@ -12,6 +12,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import sun.reflect.generics.reflectiveObjects.ParameterizedTypeImpl;
 
 /**
@@ -24,7 +25,7 @@ public class ProtostuffRuntimeCheckUtils {
 
     private static Map<String, String> TYPE_MAPPING = new HashMap<>(32);
 
-    private static Map<String, Type> CACHE = new HashMap<>(64);
+    private static Map<String, Type> CACHE = new ConcurrentHashMap<>(64);
 
     static {
         TYPE_MAPPING.put("int", "int");
