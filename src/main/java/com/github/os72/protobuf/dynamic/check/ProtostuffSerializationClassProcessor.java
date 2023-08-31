@@ -30,6 +30,8 @@ import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
 import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
+import javax.lang.model.type.DeclaredType;
+import javax.lang.model.type.TypeMirror;
 import javax.lang.model.util.ElementFilter;
 import javax.tools.Diagnostic.Kind;
 import org.apache.commons.collections4.CollectionUtils;
@@ -106,26 +108,42 @@ public class ProtostuffSerializationClassProcessor extends AbstractProcessor {
         System.out.println("正在对[" + className + "]类进行检查");
 
         List<ProtostuffSerializationSchema> newSchemaList = new ArrayList<>();
+
+        // 处理父类字段
+        TypeMirror superClassType = annotatedElement.getSuperclass();
+        int index = 0;
+        while (superClassType != null && !superClassType.toString().equals(Object.class.getTypeName())) {
+            // Process the superclass fields
+            if (!(superClassType instanceof DeclaredType)) {
+                break;
+            }
+            DeclaredType declaredSuperType = (DeclaredType) superClassType;
+            TypeElement superClassElement = (TypeElement) declaredSuperType.asElement();
+            List<? extends Element> enclosedElements = superClassElement.getEnclosedElements();
+            for (Element element : enclosedElements) {
+                if (element.getKind() != ElementKind.FIELD) {
+                    continue;
+                }
+                ProtostuffSerializationSchema schema = ProtostuffSerializationSchema.builder()
+                    .fieldName(element.getSimpleName().toString())
+                    .fieldType(element.asType().toString())
+                    .fieldIndex(index ++)
+                    .build();
+                newSchemaList.add(schema);
+            }
+            superClassType = superClassElement.getSuperclass();
+        }
+
         List<? extends Element> elements = annotatedElement.getEnclosedElements();
-        Map<String, ? extends Element> nameMap = elements.stream()
-            .collect(Collectors.toMap(element -> element.getSimpleName().toString(), Function.identity()));
         for (int i = 0; i < elements.size(); i++) {
             Element element = elements.get(i);
             if (element.getKind() != ElementKind.FIELD) {
                 continue;
             }
-            String primitiveType = element.asType().toString();
-//            String primitiveType = TYPE_MAPPING.get(fieldTypeName);
-//            if (primitiveType == null) {
-//                String getMethodName = "get" + element.getSimpleName().toString().substring(0, 1).toUpperCase() + element.getSimpleName().toString().substring(1);
-//                ExecutableElement method = (ExecutableElement) nameMap.get(getMethodName);
-//                primitiveType = method.getReturnType().toString();
-//            }
-
             ProtostuffSerializationSchema schema = ProtostuffSerializationSchema.builder()
                 .fieldName(element.getSimpleName().toString())
-                .fieldType(primitiveType)
-                .fieldIndex(i)
+                .fieldType(element.asType().toString())
+                .fieldIndex(index ++)
                 .build();
             newSchemaList.add(schema);
         }
@@ -189,6 +207,7 @@ public class ProtostuffSerializationClassProcessor extends AbstractProcessor {
             Files.createFile(path);
         }
         Files.write(path, newSchemaJson.getBytes(StandardCharsets.UTF_8));
+        System.out.println("对比文件生成完成:[" + className + "]······");
     }
 
     private String getFilePath(String configPath, String className) {
