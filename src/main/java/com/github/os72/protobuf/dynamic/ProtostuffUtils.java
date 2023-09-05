@@ -29,6 +29,8 @@ public class ProtostuffUtils {
 
     private static final String PACKAGE_KEYWORD = "java.util";
 
+    private static IdStrategy STRATEGY = new DefaultIdStrategy(IdStrategy.DEFAULT_FLAGS | IdStrategy.COLLECTION_SCHEMA_ON_REPEATED_FIELDS,null,0);
+
     /**
      * 安全缓存区，key 和 Schema 对象
      */
@@ -48,8 +50,7 @@ public class ProtostuffUtils {
     private static Schema buildSchema(Type type) throws ClassNotFoundException {
         if (!(type instanceof ParameterizedType)) {
             // 修复列表为空的问题，参考 issue：https://github.com/protostuff/protostuff/issues/324
-            IdStrategy strategy = new DefaultIdStrategy(IdStrategy.DEFAULT_FLAGS | IdStrategy.COLLECTION_SCHEMA_ON_REPEATED_FIELDS,null,0);
-            return RuntimeSchema.createFrom(Class.forName(type.getTypeName()), strategy);
+            return RuntimeSchema.createFrom(Class.forName(type.getTypeName()), STRATEGY);
         }
         String selfTypeName = ((ParameterizedType) type).getRawType().getTypeName();
         String classSimpleName = StringUtils.substring(selfTypeName, selfTypeName.lastIndexOf(".") + 1);
@@ -67,7 +68,7 @@ public class ProtostuffUtils {
             Schema valueSchema = buildSchema(arguments[1]);
             return new MessageMapSchema(keySchema, valueSchema);
         } else {
-            return RuntimeSchema.createFrom(Class.forName(type.getTypeName()));
+            return RuntimeSchema.createFrom(Class.forName(type.getTypeName()), STRATEGY);
         }
     }
 
