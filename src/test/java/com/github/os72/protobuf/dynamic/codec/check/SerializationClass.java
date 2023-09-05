@@ -8,7 +8,7 @@ import com.github.os72.protobuf.dynamic.check.ProtostuffSerializationClass;
  * @desc
  */
 
-@ProtostuffSerializationClass(configPath = "/")
+@ProtostuffSerializationClass(configPath = "/", firstGenerate = true)
 public class SerializationClass {
 
 

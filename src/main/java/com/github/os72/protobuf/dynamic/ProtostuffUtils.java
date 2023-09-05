@@ -8,6 +8,8 @@ import io.protostuff.MessageCollectionSchema;
 import io.protostuff.MessageMapSchema;
 import io.protostuff.ProtostuffIOUtil;
 import io.protostuff.Schema;
+import io.protostuff.runtime.DefaultIdStrategy;
+import io.protostuff.runtime.IdStrategy;
 import io.protostuff.runtime.RuntimeSchema;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -45,7 +47,9 @@ public class ProtostuffUtils {
 
     private static Schema buildSchema(Type type) throws ClassNotFoundException {
         if (!(type instanceof ParameterizedType)) {
-            return RuntimeSchema.createFrom(Class.forName(type.getTypeName()));
+            // 修复列表为空的问题，参考 issue：https://github.com/protostuff/protostuff/issues/324
+            IdStrategy strategy = new DefaultIdStrategy(IdStrategy.DEFAULT_FLAGS | IdStrategy.COLLECTION_SCHEMA_ON_REPEATED_FIELDS,null,0);
+            return RuntimeSchema.createFrom(Class.forName(type.getTypeName()), strategy);
         }
         String selfTypeName = ((ParameterizedType) type).getRawType().getTypeName();
         String classSimpleName = StringUtils.substring(selfTypeName, selfTypeName.lastIndexOf(".") + 1);

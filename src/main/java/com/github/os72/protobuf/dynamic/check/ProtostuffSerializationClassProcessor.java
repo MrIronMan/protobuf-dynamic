@@ -2,11 +2,9 @@ package com.github.os72.protobuf.dynamic.check;
 
 import com.alibaba.fastjson.JSON;
 import com.google.auto.service.AutoService;
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -16,9 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.ProcessingEnvironment;
 import javax.annotation.processing.Processor;
@@ -28,7 +25,6 @@ import javax.annotation.processing.SupportedSourceVersion;
 import javax.lang.model.SourceVersion;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ElementKind;
-import javax.lang.model.element.ExecutableElement;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.DeclaredType;
 import javax.lang.model.type.TypeMirror;
@@ -39,7 +35,7 @@ import org.apache.commons.collections4.CollectionUtils;
 /**
  * @author ironman
  * @date 2023/7/27 11:23
- * @desc
+ * 如果编译不通过，请注释掉所有的注解，编译成功之后再把注解打开，再编译一次就行
  */
 
 @SupportedAnnotationTypes("com.github.os72.protobuf.dynamic.check.ProtostuffSerializationClass")
@@ -92,7 +88,7 @@ public class ProtostuffSerializationClassProcessor extends AbstractProcessor {
             try {
                 checkForChanges(annotatedElement);
             } catch (IOException e) {
-                processingEnv.getMessager().printMessage(Kind.ERROR, "构建出现错误，请进行检查");
+                processingEnv.getMessager().printMessage(Kind.ERROR, "构建出现错误，请进行检查 " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -149,8 +145,28 @@ public class ProtostuffSerializationClassProcessor extends AbstractProcessor {
         }
         ProtostuffSerializationClass annotation =  annotatedElement.getAnnotation(ProtostuffSerializationClass.class);
         String schemaRelativePath = getFilePath(annotation.configPath(), className);
+        URL configResource = getClass().getClassLoader()
+            .getResource(schemaRelativePath.substring(schemaRelativePath.lastIndexOf(SEPARATOR) + 1));
+        File configFile;
+        if (configResource == null) {
+            configFile = new File("");
+        } else {
+            String classPath = "target" + SEPARATOR + "classes";
+            String resourcePath = "src" + SEPARATOR + "main" + SEPARATOR + "resources";
+            configFile = new File(configResource.getPath().replace(classPath, resourcePath));
+        }
         Path schemaPath = Paths.get(schemaRelativePath);
-        if (!Files.exists(schemaPath) || annotation.firstGenerate()) {
+        System.out.println("configResource:" + configResource);
+        System.out.println("configFile:" + configFile);
+        System.out.println("schemaPath:" + schemaPath);
+
+
+
+        processingEnv.getMessager().printMessage(Kind.WARNING, "configResource:" + configResource + " " + (configResource == null));
+        processingEnv.getMessager().printMessage(Kind.WARNING, "configFile:" + configFile + " " + configFile.exists());
+        processingEnv.getMessager().printMessage(Kind.WARNING, "schemaPath:" + schemaPath + " " + Files.exists(schemaPath));
+
+        if (!configFile.exists() || annotation.firstGenerate()) {
             if (!annotation.firstGenerate()) {
                 processingEnv.getMessager().printMessage(Kind.ERROR, className + "配置文件不存在，请进行检查");
                 return;
@@ -161,7 +177,7 @@ public class ProtostuffSerializationClassProcessor extends AbstractProcessor {
         }
 
         StringBuilder sb = new StringBuilder();
-        for (String line : Files.readAllLines(schemaPath)) {
+        for (String line : Files.readAllLines(configFile.toPath())) {
             sb.append(line);
         }
         // 对比新的类文件和老的类文件，是否有字段类型，顺序的修改和删除

@@ -164,6 +164,6 @@ public class ProtostuffRuntimeCheckUtils {
 
     private static boolean ignoreField(Field field) {
         int modifiers = field.getModifiers();
-        return Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers);
+        return Modifier.isStatic(modifiers) || Modifier.isFinal(modifiers) || field.getType().isEnum();
     }
 }
