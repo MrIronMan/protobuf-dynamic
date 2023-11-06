@@ -7,6 +7,7 @@ import java.lang.reflect.Type;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author ironman
@@ -59,6 +60,82 @@ public class CodecUtils {
 
         Object deserialize = ProtostuffUtils.deserialize(realDataBytes, type);
         System.out.println(JSON.toJSONString(deserialize));
+    }
+
+    /**
+     * 解码从 redis-cli 中获取的数据，进行了 16 进制编码处理，但是对于对于 \b(back) \n(enter) 没有进行编码，需要进行替换
+     * 例如：（以下数据的类型为：ResourcesAlbum）
+     *  原始数据：\x0b\b\xe2\n\x10\x01\x18\x02 \x01(\x011\xf0-\xca\x94w\x01\x00\x009\x00\xf1H\xc9x\x01\x00\x00\x0c\x0b\b\xca+\x10\x01\x18\x01 \x01(\x011\xb8\x9eO\x02y\x01\x00\x009\xb8\x9eO\x02y\x01\x00\x00\x0c\x0b\b\xc5F\x10\x01\x18\xc2\x0b \xff\xff\xff\xff\xff\xff\xff\xff\xff\x01(\x011\xe0R\x12\xfcv\x01\x00\x009PbVH{\x01\x00\x00\x0c\x0b\b\xc6F\x10\x01\x18\xc3\x0b \x02(\x011\xe0R\x12\xfcv\x01\x00\x009PbVH{\x01\x00\x00\x0c\x0b\b\xc7F\x10\x01\x18\xc4\x0b \x03(\x011\xe0R\x12\xfcv\x01\x00\x009PbVH{\x01\x00\x00\x0c\x0b\b\xc8F\x10\x01\x18\xc5\x0b \x04(\x011\xe0R\x12\xfcv\x01\x00\x009PbVH{\x01\x00\x00\x0c
+     *  格式数据：\x0b\x08\xe2\x0A\x10\x01\x18\x02 \x01(\x011\xf0-\xca\x94w\x01\x00\x009\x00\xf1H\xc9x\x01\x00\x00\x0c\x0b\x08\xca+\x10\x01\x18\x01 \x01(\x011\xb8\x9eO\x02y\x01\x00\x009\xb8\x9eO\x02y\x01\x00\x00\x0c\x0b\x08\xc5F\x10\x01\x18\xc2\x0b \xff\xff\xff\xff\xff\xff\xff\xff\xff\x01(\x011\xe0R\x12\xfcv\x01\x00\x009PbVH{\x01\x00\x00\x0c\x0b\x08\xc6F\x10\x01\x18\xc3\x0b \x02(\x011\xe0R\x12\xfcv\x01\x00\x009PbVH{\x01\x00\x00\x0c\x0b\x08\xc7F\x10\x01\x18\xc4\x0b \x03(\x011\xe0R\x12\xfcv\x01\x00\x009PbVH{\x01\x00\x00\x0c\x0b\x08\xc8F\x10\x01\x18\xc5\x0b \x04(\x011\xe0R\x12\xfcv\x01\x00\x009PbVH{\x01\x00\x00\x0c
+     * @param encodeStr
+     * @param type
+     */
+    public static void decodeProtoWithCli(String encodeStr, Type type) {
+        String backKey = "\\\\x08";
+        String endOfLineKey = "\\\\x0A";
+        String realData = encodeStr.replaceAll("\\\\b", backKey).replaceAll("\\\\n", endOfLineKey);
+        decodeProto(realData, type);
+    }
+
+
+    /**
+     * 用于解析获取到的 16 进制字符串
+     *
+     * @param encodeStr
+     * @param type
+     */
+    public static void decodeWithHex(String encodeStr, Type type) {
+        byte[] bytes = string2Byte(encodeStr);
+        String hexString = bytes2HexString(bytes);
+        Object deserialize = ProtostuffUtils.deserialize(bytes, type);
+        System.out.println(JSON.toJSONString(deserialize));
+    }
+
+    /**
+     *
+     * @param encodeStr
+     * @return
+     */
+    private static byte[] string2Byte(String encodeStr) {
+        String[] parts = encodeStr.split("\\\\x");
+        byte[] binaryData = new byte[encodeStr.length() * 2];
+
+        int len = 0;
+        for (String temp : parts) {
+            if (StringUtils.isEmpty(temp)) {
+                continue;
+            }
+            // 前两位为16进制表示，截取两位
+            String start = temp.substring(0, 2);
+            binaryData[len++] = (byte) Integer.parseInt(start, 16);
+
+            // 后面的为字符串，需要将每一位都转为 16 进制
+            String end = temp.substring(2);
+            if (StringUtils.isEmpty(end)) {
+                continue;
+            }
+            String[] splits = end.split("");
+            for (String str : splits) {
+                binaryData[len++] = (byte) Integer.parseInt(bytes2HexString(str.getBytes(StandardCharsets.UTF_8)), 16);
+            }
+        }
+        byte[] res = new byte[len];
+        System.arraycopy(binaryData, 0, res, 0, len--);
+
+        return res;
+    }
+
+    /**
+     * 将字节数组转换为16进制字符表示
+     * @param bytes
+     * @return
+     */
+    private static String bytes2HexString(byte[] bytes) {
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : bytes) {
+            hexString.append(String.format("%02x", b));
+        }
+        return hexString.toString();
     }
 
 }

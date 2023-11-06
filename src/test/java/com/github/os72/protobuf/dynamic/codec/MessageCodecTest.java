@@ -24,6 +24,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -259,6 +261,34 @@ public class MessageCodecTest {
 //            System.out.println(list);
         }
     }*/
+
+    @SneakyThrows
+    @Test
+    public void codingTest() {
+        Person person = Person.newBuilder()
+            .setId(123)
+            .setName("ironman")
+            .build();
+        byte[] bytes = person.toByteArray();
+        // 十六进制形式打印
+        for (byte b : bytes) {
+            System.out.print(String.format("%02X", b & 0xFF));
+        }
+        System.out.println();
+        // 反序列化
+        Person parse = Person.parseFrom(bytes);
+        System.out.println("id:" + parse.getId());
+        System.out.println("name:" + parse.getName());
+        System.out.println("===============");
+        System.out.println("id:tag:" + String.format("%02x", (((1 << 3)|0) & 0xFF)));
+        System.out.println("id:value:" + String.format("%02x", (123 & 0xFF)));
+        System.out.println("name:tag:" + String.format("%02x", (((2 << 3)|2) & 0xFF)));
+        System.out.print("name:value:");
+        byte[] nameBytes = "ironman".getBytes(StandardCharsets.UTF_8);
+        for (byte b : nameBytes) {
+            System.out.print(String.format("%02X", b & 0xFF));
+        }
+    }
 
     @Test
     public void spaceTest()

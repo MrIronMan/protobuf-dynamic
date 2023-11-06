@@ -35,6 +35,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -42,6 +43,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -59,6 +61,22 @@ public class PSTest {
         user.setUsername("ironman");
 
         return user;
+    }
+
+    @Test
+    public void testDate() {
+        Date date = new Date();
+        System.out.println(date.getTime());
+
+        byte[] bytes = ProtostuffUtils.serializer(date, Date.class);
+        Date da = ProtostuffUtils.deserialize(bytes, Date.class);
+        System.out.println(da.getTime());
+    }
+
+    public void decodeTest() {
+        String str = "\\x0B\\x09\\xF0+\\xB3$\\x88\\x01\\x00\\x00\\x11\\xF0+\\xB3$\\x88\\x01\\x00\\x00\\x18\\x8D\\xA4\\x02 \\x959(\\xC6\\x9C\\x010\\x018\\x01\\x0C";
+
+
     }
 
     @Test
@@ -137,6 +155,30 @@ public class PSTest {
         NestedUser o = ProtostuffUtils.deserialize(dynamicMessage.toByteArray(), NestedUser.class);
         System.out.println(JSON.toJSONString(o));
         Assert.assertEquals(JSON.toJSONString(o), JSON.toJSONString(nestedUser));
+    }
+
+    @SneakyThrows
+    @Test
+    public void testProtostuffToProtocolBufferNative() {
+        Person person = Person.newBuilder()
+            .setId(123)
+            .setName("ironman")
+            .setEmail("1@qq.com")
+            .build();
+        byte[] bytes = person.toByteArray();
+        TypeToken<com.github.os72.protobuf.dynamic.Person> typeToken = new TypeToken<com.github.os72.protobuf.dynamic.Person>(){};
+        Object deserialize = ProtostuffUtils.deserialize(bytes, typeToken.getType());
+        System.out.println(deserialize);
+
+
+        com.github.os72.protobuf.dynamic.Person person2 = new com.github.os72.protobuf.dynamic.Person();
+        person2.setId(12333);
+        person2.setName("Mark-1");
+        person2.setEmail("2@qq.com");
+        TypeToken<com.github.os72.protobuf.dynamic.Person> personType = new TypeToken<com.github.os72.protobuf.dynamic.Person>(){};
+        byte[] bytes2 = ProtostuffUtils.serializer(person2, personType.getType());
+        Person person3 = Person.parseFrom(bytes2);
+        System.out.println(person3);
     }
 
     @Test

@@ -54,6 +54,8 @@ public class ProtostuffRuntimeCheckUtils {
      */
     private static final String IGNORE_PACKAGE_NAME_PREFIX = "java.";
 
+    private static final String IGNORE_KEYWORD = "<";
+
     /**
      * 检查是否存在规定的注解
      * 嵌套的类也需要添加相应的注解，包括泛型类
@@ -65,7 +67,7 @@ public class ProtostuffRuntimeCheckUtils {
             throw new IllegalArgumentException("valueType is null");
         }
 
-        if (TYPE_MAPPING.get(valueType.getTypeName()) != null || valueType.getTypeName().startsWith(IGNORE_PACKAGE_NAME_PREFIX)) {
+        if (TYPE_MAPPING.get(valueType.getTypeName()) != null || isOriginalClass(valueType)) {
             return;
         }
         if (CACHE.get(valueType.getTypeName()) != null) {
@@ -97,6 +99,11 @@ public class ProtostuffRuntimeCheckUtils {
             throw new UnsupportedOperationException("type:" + valueType.getTypeName());
         }
         CACHE.put(valueType.getTypeName(), valueType);
+    }
+
+    private static boolean isOriginalClass(Type valueType) {
+        return valueType.getTypeName().startsWith(IGNORE_PACKAGE_NAME_PREFIX)
+            && !valueType.getTypeName().contains(IGNORE_KEYWORD);
     }
 
     private static void parse(String type, Map<String, Class<?>> classMap) {
