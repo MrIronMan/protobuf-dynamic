@@ -124,9 +124,6 @@ public class CodecUtils {
     public static void decodeProtoWithCli(String encodeStr, Type type) {
         String realData = encodeStr;
         for (ASCIIControlStr value : ASCIIControlStr.values()) {
-            if (!realData.contains(value.getStr())) {
-                continue;
-            }
             realData = realData.replaceAll(value.getStr(), value.getHexStr());
         }
         decodeProto(realData, type);
