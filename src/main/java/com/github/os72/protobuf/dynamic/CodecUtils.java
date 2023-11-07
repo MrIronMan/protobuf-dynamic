@@ -17,6 +17,57 @@ import org.apache.commons.lang3.StringUtils;
  */
 public class CodecUtils {
 
+    public enum ASCIIControlStr {
+        /**
+         * 空字符（Null）
+         */
+        Null("\\\\0", "\\\\x00"),
+        /**
+         * 响铃（Bell）
+         */
+        Bell("\\\\a", "\\\\x07"),
+        /**
+         * 退格（Backspace）
+         */
+        Backspace("\\\\b", "\\\\x08"),
+        /**
+         * 水平制表符（Horizontal Tab）
+         */
+        HorizontalTab("\\\\t", "\\\\x09"),
+        /**
+         * 换行（Line Feed）
+         */
+        LineFeed("\\\\n", "\\\\x0A"),
+        /**
+         * 垂直制表符（Vertical Tab）
+         */
+        VerticalTab("\\\\v", "\\\\x0B"),
+        /**
+         * 换页（Form Feed）
+         */
+        FormFeed("\\\\f", "\\\\x0C"),
+        /**
+         * 回车（Carriage Return）
+         */
+        CarriageReturn("\\\\r", "\\\\x0D"),
+        ;
+        private String str;
+        private String hexStr;
+
+        ASCIIControlStr(String str, String hexStr) {
+            this.str = str;
+            this.hexStr = hexStr;
+        }
+
+        public String getStr() {
+            return str;
+        }
+
+        public String getHexStr() {
+            return hexStr;
+        }
+    }
+
     private CodecUtils() {
         throw new UnsupportedOperationException(":( bad boy～");
     }
@@ -71,9 +122,13 @@ public class CodecUtils {
      * @param type
      */
     public static void decodeProtoWithCli(String encodeStr, Type type) {
-        String backKey = "\\\\x08";
-        String endOfLineKey = "\\\\x0A";
-        String realData = encodeStr.replaceAll("\\\\b", backKey).replaceAll("\\\\n", endOfLineKey);
+        String realData = encodeStr;
+        for (ASCIIControlStr value : ASCIIControlStr.values()) {
+            if (!realData.contains(value.getStr())) {
+                continue;
+            }
+            realData = realData.replaceAll(value.getStr(), value.getHexStr());
+        }
         decodeProto(realData, type);
     }
 
